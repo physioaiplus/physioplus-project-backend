@@ -1,0 +1,15 @@
+.venv/
+env/
+ENV/
+venv/
+functions/.venv/
+functions/env/
+functions/venv/
+__pycache__/
+.DS_Store
+*.pyc
+*.pyo
+*.pyd
+*.swp
+*.swo
+*.log

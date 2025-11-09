@@ -3,7 +3,10 @@ import threading
 from datetime import datetime, timezone
 from typing import Optional, Tuple
 
-import numpy as np
+try:
+    import numpy as np  # type: ignore
+except Exception:  # pragma: no cover
+    np = None  # numpy opzionale in emulatore; fallback a placeholder
 
 try:
     import cv2  # type: ignore
@@ -77,10 +80,13 @@ class CameraManager:
             "backend": "opencv" if cv2 is not None else "stub",
         }
 
-    def get_frame(self) -> Optional[np.ndarray]:
+    def get_frame(self):  # Optional[np.ndarray]
         return self._last_frame
 
-    def frame_to_base64(self, frame: np.ndarray) -> str:
+    def frame_to_base64(self, frame) -> str:
+        if frame is None:
+            # 1x1 transparent PNG
+            return base64.b64encode(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\x0cIDATx\x9cc``\x00\x00\x00\x02\x00\x01\xe2!\xbc3\x00\x00\x00\x00IEND\xaeB`\x82").decode("ascii")
         if cv2 is not None:
             ok, buf = cv2.imencode(".jpg", frame)
             if ok:
@@ -90,7 +96,11 @@ class CameraManager:
             import PIL.Image as Image  # type: ignore
             from io import BytesIO
 
-            im = Image.fromarray(frame[..., ::-1])  # BGR->RGB
+            try:
+                im = Image.fromarray(frame[..., ::-1])  # BGR->RGB
+            except Exception:
+                # frame non è un array; genera pixel singolo
+                im = Image.new("RGB", (1, 1), color=(200, 200, 200))
             bio = BytesIO()
             im.save(bio, format="JPEG", quality=80)
             return base64.b64encode(bio.getvalue()).decode("ascii")
@@ -150,7 +160,7 @@ class CameraManager:
             frame = self._solid_frame(color)
             try:
                 # draw STUB text if cv2 available
-                if cv2 is not None:
+                if cv2 is not None and frame is not None:
                     cv2.putText(frame, "STUB STREAM", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.0, text_color, 2)
             except Exception:
                 pass
@@ -159,7 +169,9 @@ class CameraManager:
             if cv2 is not None:
                 cv2.waitKey(int(1000 / max(self.fps, 1)))
 
-    def _solid_frame(self, bgr: tuple) -> np.ndarray:
+    def _solid_frame(self, bgr: tuple):
+        if np is None:
+            return None
         return np.full((self.height, self.width, 3), bgr, dtype=np.uint8)
 
 

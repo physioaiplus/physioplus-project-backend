@@ -76,4 +76,3 @@ class PoseEstimator:
         if "left_shoulder" in kps and "right_shoulder" in kps:
             val = 1.0 - abs(kps["left_shoulder"]["y"] - kps["right_shoulder"]["y"])
         return {"shoulders": float(np.clip(val, 0.0, 1.0))}
-
